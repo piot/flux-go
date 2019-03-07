@@ -31,23 +31,25 @@ import (
 	"net"
 
 	"github.com/piot/flux-go/src/endpoint"
+	"github.com/piot/log-go/src/clog"
 )
 
 type Communication struct {
 	hostAddr      *net.UDPAddr
 	udpConnection *net.UDPConn
+	log           *clog.Log
 }
 
 func (s *Communication) WriteToUDP(addr *endpoint.Endpoint, octets []byte) error {
 	a := addr.UDPAddr()
 	sentOctets, writeErr := s.udpConnection.WriteToUDP(octets, a)
 	if writeErr != nil {
-		fmt.Printf("UDP Write failed '%v' %v %v\n", writeErr, a, octets)
+		s.log.Warn("UDP Write failed", clog.Error("writeErr", writeErr), clog.Stringer("udpAddr", a), clog.Int("octetCount", len(octets)))
 		return writeErr
 	}
 	if sentOctets != len(octets) {
 		sentOctetsErr := fmt.Errorf("didn't send all octets:%v expected:%v", sentOctets, len(octets))
-		fmt.Printf("UDP Write failed '%v' %v %v\n", sentOctetsErr, a, octets)
+		s.log.Warn("UDP Write failed", clog.Error("sentOctetsErr", sentOctetsErr), clog.Stringer("udpAddr", a), clog.Int("octetCount", len(octets)))
 		return sentOctetsErr
 	}
 	return nil
@@ -62,7 +64,7 @@ func (s *Communication) HostAddr() *net.UDPAddr {
 	return s.hostAddr
 }
 
-func NewServerCommunication(listenPort int) (*Communication, error) {
+func NewServerCommunication(listenPort int, log *clog.Log) (*Communication, error) {
 	portString := fmt.Sprintf(":%d", listenPort)
 	localAddr, localAddrErr := net.ResolveUDPAddr("udp", portString)
 	if localAddrErr != nil {
@@ -73,12 +75,12 @@ func NewServerCommunication(listenPort int) (*Communication, error) {
 		return nil, fmt.Errorf("Error: %v", err)
 	}
 
-	fmt.Printf("Listening to %s\n", portString)
-	return &Communication{udpConnection: serverConnection}, nil
+	log.Info("listening", clog.String("listenHost", portString))
+	return &Communication{udpConnection: serverConnection, log: log}, nil
 }
 
-func NewClientCommunication(host string) (*Communication, error) {
-	fmt.Printf("Connecting to %v", host)
+func NewClientCommunication(host string, log *clog.Log) (*Communication, error) {
+	log.Info("connecting", clog.String("host", host))
 	serverAddr, serverAddrErr := net.ResolveUDPAddr("udp", host)
 	if serverAddrErr != nil {
 		return nil, serverAddrErr
@@ -87,5 +89,5 @@ func NewClientCommunication(host string) (*Communication, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Communication{udpConnection: conn, hostAddr: serverAddr}, nil
+	return &Communication{udpConnection: conn, hostAddr: serverAddr, log: log}, nil
 }
