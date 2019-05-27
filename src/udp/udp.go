@@ -79,6 +79,30 @@ func NewServerCommunication(listenPort int, log *clog.Log) (*Communication, erro
 	return &Communication{udpConnection: serverConnection, log: log}, nil
 }
 
+func NewServerCommunicationFirstAvailablePort(listenPort int, log *clog.Log) (*Communication, int, error) {
+	var listenErr error
+	var comm *Communication
+	var foundPort int
+	for port := listenPort; port < listenPort+64; port++ {
+		comm, listenErr = NewServerCommunication(port, log)
+		if listenErr == nil {
+			foundPort = port
+			break
+		}
+	}
+
+	if listenErr != nil {
+		return nil, 0, listenErr
+	}
+
+	if comm == nil {
+		return nil, 0, fmt.Errorf("comm error")
+	}
+
+	return comm, foundPort, nil
+
+}
+
 func NewClientCommunication(host string, log *clog.Log) (*Communication, error) {
 	log.Info("connecting", clog.String("host", host))
 	serverAddr, serverAddrErr := net.ResolveUDPAddr("udp", host)
