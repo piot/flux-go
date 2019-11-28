@@ -42,6 +42,20 @@ type Communication struct {
 
 func (s *Communication) WriteToUDP(addr *endpoint.Endpoint, octets []byte) error {
 	a := addr.UDPAddr()
+	payloadSize := len(octets)
+
+	const udpMaxSize = 65500
+
+	const udpRecommendedMaxSize = 500
+
+	if payloadSize > udpRecommendedMaxSize {
+		if payloadSize > udpMaxSize {
+			return fmt.Errorf("payload octet size is too big %v (max %v)", payloadSize, udpMaxSize)
+		}
+
+		s.log.Warn("UDP payload size too big", clog.Int("payloadSize", payloadSize), clog.Int("recommendedMax", udpRecommendedMaxSize))
+	}
+
 	sentOctets, writeErr := s.udpConnection.WriteToUDP(octets, a)
 	if writeErr != nil {
 		s.log.Warn("UDP Write failed", clog.Error("writeErr", writeErr), clog.Stringer("udpAddr", a), clog.Int("octetCount", len(octets)))
@@ -83,6 +97,7 @@ func NewServerCommunicationFirstAvailablePort(listenPort int, log *clog.Log) (*C
 	var listenErr error
 	var comm *Communication
 	var foundPort int
+
 	for port := listenPort; port < listenPort+64; port++ {
 		comm, listenErr = NewServerCommunication(port, log)
 		if listenErr == nil {
