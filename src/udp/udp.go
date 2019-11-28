@@ -58,12 +58,12 @@ func (s *Communication) WriteToUDP(addr *endpoint.Endpoint, octets []byte) error
 
 	sentOctets, writeErr := s.udpConnection.WriteToUDP(octets, a)
 	if writeErr != nil {
-		s.log.Warn("UDP Write failed", clog.Error("writeErr", writeErr), clog.Stringer("udpAddr", a), clog.Int("octetCount", len(octets)))
+		s.log.Warn("UDP Write failed", clog.Error("writeErr", writeErr), clog.Stringer("udpAddr", a), clog.Int("octetCount", payloadSize))
 		return writeErr
 	}
-	if sentOctets != len(octets) {
-		sentOctetsErr := fmt.Errorf("didn't send all octets:%v expected:%v", sentOctets, len(octets))
-		s.log.Warn("UDP Write failed", clog.Error("sentOctetsErr", sentOctetsErr), clog.Stringer("udpAddr", a), clog.Int("octetCount", len(octets)))
+	if sentOctets != payloadSize {
+		sentOctetsErr := fmt.Errorf("didn't send all octets:%v expected:%v", sentOctets, payloadSize)
+		s.log.Warn("UDP Write failed", clog.Error("sentOctetsErr", sentOctetsErr), clog.Stringer("udpAddr", a), clog.Int("octetCount", payloadSize))
 		return sentOctetsErr
 	}
 	return nil
