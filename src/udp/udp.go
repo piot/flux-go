@@ -45,15 +45,14 @@ func (s *Communication) WriteToUDP(addr *endpoint.Endpoint, octets []byte) error
 	payloadSize := len(octets)
 
 	const udpMaxSize = 65500
-
-	const udpRecommendedMaxSize = 500
+	const udpRecommendedMaxSize = 1280
 
 	if payloadSize > udpRecommendedMaxSize {
 		if payloadSize > udpMaxSize {
 			return fmt.Errorf("payload octet size is too big %v (max %v)", payloadSize, udpMaxSize)
 		}
 
-		s.log.Warn("UDP payload size too big", clog.Int("payloadSize", payloadSize), clog.Int("recommendedMax", udpRecommendedMaxSize))
+		s.log.Warn("write: UDP payload size too big", clog.Int("payloadSize", payloadSize), clog.Int("recommendedMax", udpRecommendedMaxSize))
 	}
 
 	sentOctets, writeErr := s.udpConnection.WriteToUDP(octets, a)
